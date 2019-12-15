@@ -1,58 +1,228 @@
 import argparse
 import os.path
-import SQLiteDB
+from SQLiteDB import SQLiteDB
+from utils.FDManagement import *
 
 """
-Interface CLI permettant d'effectuer à l'utilisateur de pouvoir exécuter toutes les fonctions interactivement.
+Let the user to execute the different functions of the project from a list of options.
 """
 
-status = True
+database = None
+working = True
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-f", "--file", type=str, required=True, help="name of the .db file")
-database = parser.parse_args().file
+"""
+Gets the user's database name after the parameter '-f' w/ argparse.
+:return: Name of the user's database.
+"""
 
-# Rajoute l'extension .db si l'utilisateur l'oublie
-if not (database.lower().endswith('.db')):
-    database += ".db"
 
-# Vérifie que le fichier existe
-if os.path.isfile(database):
-    print("Fichier trouvé\n")
-else:
-    print("Fichier non retrouvé")
+def get_database_name():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", type=str, required=True, help="name of the .db file")
+    return parser.parse_args().file
+
+
+"""
+Checks if the username forgot the '.db' extension at the end of his input and if the file exists.
+:return: Name of the user's database if it exists.
+"""
+
+
+def get_database():
+    db = get_database_name()
+    if not (db.lower().endswith('.db')):
+        db += ".db"
+    if os.path.isfile(db):
+        print("File found.\n")
+    else:
+        print("File not found.\n")
+        raise SystemExit
+    return db
+
+
+"""
+Executes the user action.
+:param choice: Integer that represents the user action.
+:return: The function associated with the user action.
+"""
+
+
+def switch_choices(choice, fd):
+    switch = {
+        1: display_fd,
+        2: display_keys,
+        3: remove_non_fd,
+        4: add_fd,
+        5: modify_fd,
+        6: remove_fd,
+        7: remove_equivalence_transitive_fd,
+        8: commit_changes,
+        9: check_bcnf,
+        10: export_3nf,
+        11: leave
+    }
+    if choice != 11:
+        return switch.get(choice)(fd)
+    return switch.get(choice)()
+
+
+"""
+Transforms the rows of the FuncDep relation into an array of array(s) that represents each row.
+:param sql_db: SQLiteDB object.
+:return: Array of array(s) that represents each rows.
+"""
+
+
+def fd_from_db(csr):
+    df = []
+    csr.execute('SELECT * FROM FuncDep')
+    for row in csr.fetchall():
+        df.append(row)
+    return df
+
+
+# All the actions
+
+"""
+Displays all the functional dependencies of the FuncDep relation.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+def display_fd(fd: FDManagement):
+    print(fd)
+
+"""
+Displays all the keys (super and candidates).
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+def display_keys(fd: FDManagement):
+    pass
+
+
+"""
+Displays all the non-functional dependencies of the FuncDep relation and lets the user to delete them.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+
+def remove_non_fd(fd: FDManagement):
+    pass
+
+
+"""
+Adds a functional dependency to the FuncDep.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+def add_fd(fd: FDManagement):
+    funcdep = FunctionalDependency(tuple(input("Enter your functional dependency with this syntax. table_name,lhs,"
+                                               "rhs: ").split(",")))
+    fd.add_fd(funcdep)
+    display_fd(fd)
+
+
+"""
+Modifies a functional dependency in the FuncDep by another.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+
+def modify_fd(fd: FDManagement):
+    funcdep1 = FunctionalDependency(tuple(input("Enter your existing functional dependency with this syntax. "
+                                                "table_name,lhs, rhs: ").split(",")))
+    funcdep2 = FunctionalDependency(tuple(input("Enter your new functional dependency with this syntax. "
+                                                "table_name,lhs, rhs: ").split(",")))
+    fd.modify_fd(funcdep1, funcdep2)
+    display_fd(fd)
+
+
+"""
+Removes a functional dependency of the FuncDep.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+
+def remove_fd(fd: FDManagement):
+    funcdep = FunctionalDependency(tuple(input("Enter your functional dependency with this syntax. table_name,lhs,"
+                                               "rhs: ").split(",")))
+    fd.remove_fd(funcdep)
+    display_fd(fd)
+
+
+"""
+Removes useless functional dependencies.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+
+def remove_equivalence_transitive_fd(fd: FDManagement):
+    fd.remove_duplicates()
+    fd.remove_transitive()
+    display_fd(fd)
+
+
+"""
+Save the changes did to the FuncDep.
+:param fd: FDmanagement object that contains all the functional dependencies.
+"""
+
+
+def commit_changes(fd: FDManagement):
+    sqlDb = fd.get_db()
+    sqlDb.save()
+
+
+def check_bcnf(fd: FDManagement):
+    check_3nf(fd)
+
+
+def check_3nf(fd: FDManagement) -> bool:
+    pass
+
+
+def export_3nf():
+    if check_3nf():
+        print("Already in 3NF")
+
+
+"""
+Exit the application
+"""
+
+
+def leave():
+    working = False
     raise SystemExit
 
- #sqlDb = SQLiteDB(database)
 
-def choices(integer):
-    switch = {
-        1: execute,
-        8: exit()
-    }
+def choices(fd):
+    while working:
+        print("Choose an action\n-------------------------------\n")
+        print("1. Display the FuncDep relation")
+        print("2. Display the keys")
+        print("3. Check if all the fields of FuncDep are functional dependencies")
+        print("4. Add a functional dependency")
+        print("5. Modify a functional dependency")
+        print("6. Remove a functional dependency")
+        print("7. Remove transitive (trivial) and equivalent functional dependencies (unnecessary)")
+        print("8. Commit all the changes in the database")
+        print("9. Check if the relation is in BCNF or 3NF")
+        print("10. Export relation in 3NF form")
+        print("11. Leave the application\n")
 
-    return switch.get(integer, "Cette option n'existe pas")()
-
-def execute(command):
-    print()
-    #sqlDb.execute(command)
-def quit():
-    status = False
-
-while(status):
-    print("Sélectionner une action\n-------------------------------\n")
-    print("1. Exécuter une commande SQL")
-    print("8. Quitter l'application")
-
-    choice = 0
-    while not (0 < choice < 10):
-        choice = int(input())
-        if not 0 < choice < 10:
-         print("Action inconnue")
-    choices(choice)
+        choice = 0
+        while not (0 < choice < 12):
+            choice = int(input())
+            if not 0 < choice < 12:
+                print("Unknown action")
+        switch_choices(choice, fd)
 
 
-
-
-
-
+if __name__ == '__main__':
+    database = get_database()
+    sqlDb = SQLiteDB(database)
+    cursor = sqlDb.csr()
+    FDmg = FDManagement(fd_from_db(cursor), sqlDb)
+    choices(FDmg)
+    sqlDb.close()
