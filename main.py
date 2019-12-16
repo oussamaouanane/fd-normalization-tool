@@ -158,7 +158,8 @@ Removes useless functional dependencies.
 
 def remove_equivalence_transitive_fd(fd: FDManagement):
     fd.remove_duplicates()
-    fd.remove_transitive()
+    fd.remove_useless()
+    fd.remove_all_transitive()
     display_fd(fd)
 
 

@@ -1,5 +1,3 @@
-from typing import List, Any
-
 from SQLiteDB import SQLiteDB
 
 
@@ -68,11 +66,33 @@ class FDManagement:
         return self.__db
 
     """
-       Finds all the super keys.
-       :return: Array of arrays that represents a set of super keys.
-       """
+    Finds the closure of a set of attributes
+    :param attributes: str that represents the set of attributes
+    """
 
-    def get_super_keys(self):
+    def closure(self, relation, attributes):
+        fdinrelation = []
+        for fd in self.get_fd():
+            if fd.get_relation == relation:
+                fdinrelation.append(fd)
+
+        # Will help to find the state where attr stays still
+        attr_compare = []
+        attr = list(attributes)
+
+        while attr_compare != attr:
+            attr_compare = attr
+            for fd in fdinrelation:
+                if all(x in attr for x in fd.get_attributes_a):
+                    attr = list(set(attr).union(set(fd.get_attributes_b)))
+        return attr
+
+    """
+    Finds all the super keys.
+    :return: Array of arrays that represents a set of super keys.
+    """
+
+    def get_super_keys(self, relation):
         pass
 
     """
@@ -88,7 +108,7 @@ class FDManagement:
     """
 
     def remove_duplicates(self):
-        delete: List[FunctionalDependency] = []
+        delete: list[FunctionalDependency] = []
         for i in range(len(self.get_fd())):
             for j in range(len(self.get_fd())):
                 if i == j:
@@ -99,13 +119,15 @@ class FDManagement:
         for fd in delete:
             self.remove_fd(fd)
 
-    """Removes all the useless (X->Y where Y is a subset of X) FunctionalDependency objects in __fdObjects and from 
-    the relation FuncDep. """
+    """
+    Removes all the useless (X->Y where Y is a subset of X or empties) FunctionalDependency objects in __fdObjects and from 
+    the relation FuncDep. 
+    """
 
     def remove_useless(self):
-        delete: List[FunctionalDependency] = []
+        delete: list[FunctionalDependency] = []
         for fd in self.get_fd():
-            if fd.get_attributes_b in fd.get_attributes_a:
+            if fd.get_attributes_b in fd.get_attributes_a or (fd.get_attributes_a == "" or fd.get_attributes_b == ""):
                 delete += fd
         for fd in delete:
             self.remove_fd(fd)
@@ -114,16 +136,43 @@ class FDManagement:
     Removes all the transitive FunctionalDependency objects in __fdObjects and from the relation FuncDep.
     """
 
-    def remove_transitive(self):
-        pass
+    def remove_transitive(self, relation):
+        delete: list[FunctionalDependency] = []
+        for fd in self.get_fd():
+            closure = self.closure(relation, fd.get_attributes_a)
+            if all(x in closure for x in fd.get_attributes_b):
+                delete.append(fd)
+        for fd in delete:
+            self.remove_fd(fd)
+
+    def remove_all_transitive(self, relations):
+        for relation in relations:
+            self.remove_transitive(relation)
 
     """
     Finds all the non functional dependencies in the FuncDep relation.
     :return: Array of FunctionalDependency objects that are not functional dependencies.
     """
 
-    def all_non_df(self):
-        pass
+    def all_non_fd(self):
+        nonfd = []
+        existent = {}
+        for fd in self.get_fd():
+            self.get_db().csr().execute("SELECT" + ",".join(list(fd.get_attributes_a() + fd.get_attributes_b)) + " FROM " + fd.get_relation)
+            for row in self.get_db().csr().fetchall():
+                concata = ""
+                concatb = ""
+                for i in range(len(fd.get_attributes_a())):
+                    concata += row[i]
+                for j in range(len(fd.get_attributes_a()),len(row)-1):
+                    concatb += row[j]
+                if concata in existent:
+                    if existent.get(concata) != concatb and fd not in nonfd:
+                        nonfd.append(FunctionalDependency(fd))
+                        break
+                else:
+                    existent[concata] = concatb
+        return nonfd
 
     """
     Adds a functional dependency in __fdObjects and in the FuncDep relation.
