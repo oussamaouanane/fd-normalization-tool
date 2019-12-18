@@ -23,6 +23,20 @@ class SQLiteDB:
     def cancel(self):
         self.cnx.rollback()
 
+    def get_relations(self):
+        rel = []
+        relations = self.csr().execute("SELECT name FROM sqlite_master WHERE type='table';")
+        for relation in relations:
+            rel.append(relation[0])
+        return rel
+
+    def get_attributes(self, relation):
+        att = []
+        attributes = self.csr().execute("pragma table_info({})".format(relation))
+        for attribute in attributes:
+            att.append(attribute[1])
+        return att
+
     def close(self):
         self.csr().close()
         self.cnx.close()

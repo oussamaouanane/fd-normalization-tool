@@ -2,6 +2,7 @@ import argparse
 import os.path
 from SQLiteDB import SQLiteDB
 from utils.FDManagement import *
+from utils.Normalization import Normalization
 
 """
 Let the user to execute the different functions of the project from a list of options.
@@ -57,8 +58,8 @@ def switch_choices(choice, fd):
         6: remove_fd,
         7: remove_equivalence_transitive_fd,
         8: commit_changes,
-        9: check_bcnf,
-        10: export_3nf,
+        9: check_BCNF,
+        10: export_3NF,
         11: leave
     }
     if choice != 11:
@@ -85,106 +86,134 @@ def fd_from_db(csr):
 
 """
 Displays all the functional dependencies of the FuncDep relation.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
+
 
 def display_fd(fd: FDManagement):
     print(fd)
 
+
 """
-Displays all the keys (super and candidates).
-:param fd: FDmanagement object that contains all the functional dependencies.
+Displays all the keys (super and candidates) of a relation.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
+
 def display_keys(fd: FDManagement):
-    pass
+    relation = input("Enter the name of the relation: ")
+    print("The super keys of the relation {} are: ".format(relation), end="")
+    super_keys = fd.get_super_keys(relation)
+    print(super_keys)
+    print("The candidates keys of the relation {} are: ".format(relation), end="")
+    print(fd.get_candidate_keys(relation, super_keys))
 
 
 """
 Displays all the non-functional dependencies of the FuncDep relation and lets the user to delete them.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
 
 def remove_non_fd(fd: FDManagement):
-    pass
+    non_fd = fd.all_non_fd()
+    if len(non_fd) == 0:
+        print("No non functional dependencies")
+    else:
+        for f_d in non_fd:
+            print(f_d)
+        remove = input("Remove all? ")
+        if remove.lower() == "yes" or remove.lower() == "y":
+            for f_d in non_fd:
+                fd.remove_fd(f_d)
 
 
 """
 Adds a functional dependency to the FuncDep.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
+
 def add_fd(fd: FDManagement):
-    funcdep = FunctionalDependency(tuple(input("Enter your functional dependency with this syntax. table_name,lhs,"
-                                               "rhs: ").split(",")))
-    fd.add_fd(funcdep)
+    func_dep = FunctionalDependency(tuple(input("Enter your functional dependency with this syntax. table_name,lhs,"
+                                                "rhs: ").split(",")))
+    fd.add_fd(func_dep)
     display_fd(fd)
 
 
 """
 Modifies a functional dependency in the FuncDep by another.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
 
 def modify_fd(fd: FDManagement):
-    funcdep1 = FunctionalDependency(tuple(input("Enter your existing functional dependency with this syntax. "
-                                                "table_name,lhs, rhs: ").split(",")))
-    funcdep2 = FunctionalDependency(tuple(input("Enter your new functional dependency with this syntax. "
-                                                "table_name,lhs, rhs: ").split(",")))
-    fd.modify_fd(funcdep1, funcdep2)
+    func_dep1 = FunctionalDependency(tuple(input("Enter your existing functional dependency with this syntax. "
+                                                 "table_name,lhs, rhs: ").split(",")))
+    func_dep2 = FunctionalDependency(tuple(input("Enter your new functional dependency with this syntax. "
+                                                 "table_name,lhs, rhs: ").split(",")))
+    fd.modify_fd(func_dep1, func_dep2)
     display_fd(fd)
 
 
 """
 Removes a functional dependency of the FuncDep.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
 
 def remove_fd(fd: FDManagement):
-    funcdep = FunctionalDependency(tuple(input("Enter your functional dependency with this syntax. table_name,lhs,"
-                                               "rhs: ").split(",")))
-    fd.remove_fd(funcdep)
+    func_dep = FunctionalDependency(tuple(input("Enter your functional dependency with this syntax. table_name,lhs,"
+                                                "rhs: ").split(",")))
+    fd.remove_fd(func_dep)
     display_fd(fd)
 
 
 """
 Removes useless functional dependencies.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
 
 def remove_equivalence_transitive_fd(fd: FDManagement):
     fd.remove_duplicates()
     fd.remove_useless()
-    fd.remove_all_transitive()
+    fd.remove_all_transitive(fd.get_db().get_relations())
     display_fd(fd)
 
 
 """
 Save the changes did to the FuncDep.
-:param fd: FDmanagement object that contains all the functional dependencies.
+:param fd: FDManagement object that contains all the functional dependencies.
 """
 
 
 def commit_changes(fd: FDManagement):
-    sqlDb = fd.get_db()
-    sqlDb.save()
+    sqli = fd.get_db()
+    sqli.save()
 
 
-def check_bcnf(fd: FDManagement):
-    check_3nf(fd)
+def check_BCNF(fd: FDManagement):
+    norm = Normalization(fd)
+    print()
+    check_3NF(fd, norm)
 
 
-def check_3nf(fd: FDManagement) -> bool:
-    pass
+def check_3NF(fd: FDManagement, normalization: Normalization, relation) -> bool:
+    return normalization.is_3NF(relation)
 
 
-def export_3nf():
-    if check_3nf():
+def export_3NF(fd: FDManagement):
+    norm = Normalization(fd)
+    normalized = True
+    for relation in fd.get_db().get_relations():
+        if not check_3NF(fd, norm, relation):
+            normalized = False
+    if normalized:
         print("Already in 3NF")
+    else:
+        # TODO: Call the 3NF decomposition function
+        pass
 
 
 """
@@ -214,7 +243,7 @@ def choices(fd):
 
         choice = 0
         while not (0 < choice < 12):
-            choice = int(input())
+            choice = int(input("Enter an action: "))
             if not 0 < choice < 12:
                 print("Unknown action")
         switch_choices(choice, fd)
@@ -222,8 +251,8 @@ def choices(fd):
 
 if __name__ == '__main__':
     database = get_database()
-    sqlDb = SQLiteDB(database)
-    cursor = sqlDb.csr()
-    FDmg = FDManagement(fd_from_db(cursor), sqlDb)
+    sql_db = SQLiteDB(database)
+    cursor = sql_db.csr()
+    FDmg = FDManagement(fd_from_db(cursor), sql_db)
     choices(FDmg)
-    sqlDb.close()
+    sql_db.close()

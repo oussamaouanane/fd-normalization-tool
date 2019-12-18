@@ -1,6 +1,7 @@
 from SQLiteDB import SQLiteDB
 from utils.FDManagement import *
 
+
 class Normalization:
 
     def __init__(self, fdmanagement: FDManagement):
@@ -46,4 +47,3 @@ class Normalization:
                     if not (fdbis.get_attributes_a() in super_keys):
                         res = False
         return res
-
