@@ -16,7 +16,6 @@ class Normalization:
         res = True
         fd = self.__fdmanagement.get_fd()
         keys_list = self.__fdmanagement.get_candidate_keys(relation)
-        super_keys = self.__fdmanagement.get_super_keys(relation)
         keys = []
         if len(fd) != 0:
             for key in keys_list:
@@ -26,7 +25,7 @@ class Normalization:
 
             for fdbis in fd:
                 if fdbis.get_relation() == relation:
-                    if not ((fdbis.get_attributes_a() in super_keys) or fdbis.get_attributes_b() in keys):
+                    if not ((closure(relation,fdbis.get_attributes_a())==fd.get_db().get_attributes(relation)) or fdbis.get_attributes_b() in keys):
                         res = False
         return res
 
@@ -43,7 +42,31 @@ class Normalization:
         if len(fd) != 0:
             for fdbis in fd:
                 if fdbis.get_relation() == relation:
-                    if not (fdbis.get_attributes_a() in super_keys):
+                    if not (closure(relation,fdbis.get_attributes_a())==fd.get_db().get_attributes(relation)):
                         res = False
         return res
+
+    """
+    create a new database in 3NF form
+    :param relation: str that represents the relation name
+    :param database_name: str tha represents the name of the nieuw database, decomposition by default
+    """
+
+    def decompostion_3NF(self,relation,database_name="decomposition.db"):
+        if(relation!="FuncDep"):
+            cursor = self.connection.cursor()
+            keys_list=self.__fdmanagement.get_candidate_keys(relation)
+            """keys_list[0] est le premier tableau de la base de données """
+            fd=self.__fdmanagement.get_fd()
+            attributes=[]
+            for fdbis in fd:
+                if fdbis.get_attributes_a() not in attributes:
+                    attributes.append(fdbis.get_attributes_a())
+            compo_table=[]
+            for att in attributes:
+                compo_table=direct_closure(relation,att)
+            """fd.get_db().csr().execute("INSERT INTO {} SELECT {} FROM {}".format(nouvelle_relation, attributes+fd.direct_closure(relation, attributes), relation))
+            crée et met les valeurs de l'ancienne table dans la nouvelle
+            """
+
 
