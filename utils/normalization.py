@@ -1,6 +1,7 @@
 from SQLiteDB import SQLiteDB
 from utils.FDManagement import *
 
+
 class Normalization:
 
     def __init__(self, fdmanagement: FDManagement):
@@ -19,7 +20,7 @@ class Normalization:
         keys = []
         if len(fd) != 0:
             for key in keys_list:
-                for a in keys_list:
+                for a in key:
                     if a not in keys:
                         keys.append(a)
 
@@ -60,8 +61,9 @@ class Normalization:
             fd=self.__fdmanagement.get_fd()
             attributes=[]
             for fdbis in fd:
-                if fdbis.get_attributes_a() not in attributes:
-                    attributes.append(fdbis.get_attributes_a())
+                att=fdbis.get_attributes_a()
+                if att not in attributes:
+                    attributes.append(att)
             compo_table=[]
             for att in attributes:
                 compo_table=direct_closure(relation,att)

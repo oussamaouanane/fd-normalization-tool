@@ -1,4 +1,5 @@
 from SQLiteDB import SQLiteDB
+from itertools import combinations
 
 
 class FunctionalDependency:
@@ -9,20 +10,20 @@ class FunctionalDependency:
 
     def __init__(self, row):
         self.__relation = row[0]
-        self.__attributesA = row[1]
-        self.__attributesB = row[2]
+        self.__attributesA = row[1].split(" ")
+        self.__attributesB = row[2].split(" ")
 
     def get_relation(self) -> str:
         return self.__relation
 
-    def get_attributes_a(self) -> str:
+    def get_attributes_a(self) -> list:
         return self.__attributesA
 
-    def get_attributes_b(self) -> str:
+    def get_attributes_b(self) -> list:
         return self.__attributesB
 
     def __str__(self):
-        return "".join(self.__attributesA) + " --> " + "".join(self.__attributesB) + "\n"
+        return ",".join(self.get_attributes_a()) + " --> " + ",".join(self.get_attributes_b()) + "\n"
 
 
 """
@@ -66,15 +67,29 @@ class FDManagement:
         return self.__db
 
     """
+    Finds the direct closure of a set of attributes
+    :param attributes: str that represents the set of attributes
+    """
+
+    def direct_closure(self, relation, attributes):
+        fd_in_relation = []
+        for fd in self.get_fd():
+            lhs = fd.get_attributes_a()
+            rhs = fd.get_attributes_b()
+            if lhs == attributes and fd.get_relation == relation:
+                fd_in_relation.append(rhs)
+        return "," + ",".join(fd_in_relation)
+
+    """
     Finds the closure of a set of attributes
     :param attributes: str that represents the set of attributes
     """
 
     def closure(self, relation, attributes):
-        fdinrelation = []
+        fd_in_relation = []
         for fd in self.get_fd():
             if fd.get_relation == relation:
-                fdinrelation.append(fd)
+                fd_in_relation.append(fd)
 
         # Will help to find the state where attr stays still
         attr_compare = []
@@ -82,7 +97,7 @@ class FDManagement:
 
         while attr_compare != attr:
             attr_compare = attr
-            for fd in fdinrelation:
+            for fd in fd_in_relation:
                 if all(x in attr for x in fd.get_attributes_a):
                     attr = list(set(attr).union(set(fd.get_attributes_b)))
         return attr
@@ -93,15 +108,47 @@ class FDManagement:
     """
 
     def get_super_keys(self, relation):
-        pass
+        super_keys = []
+        super_keys_return = []
+        all_possible_combinations = []
+        attributes = self.get_db().get_attributes(relation)
+        attributes.sort()
+        for index in range(0, len(attributes) + 1):
+            all_possible_combinations.append(list(combinations(attributes, index + 1)))
+        for attribute in all_possible_combinations:
+            for i in attribute:
+                closure = self.closure(relation, i)
+                closure.sort()
+                if closure == attributes:
+                    super_keys.append(attribute)
+        for attr in super_keys:
+            super_keys_return.append(list(attr[0]))
+        return super_keys_return
 
     """
     Finds all the candidates keys.
     :return: Array of arrays that represents a set of candidates keys.
     """
 
-    def get_candidate_keys(self):
-        pass
+    def get_candidate_keys(self, relation, super_keys):
+        candidate_keys = super_keys
+        for k in candidate_keys:
+            k.sort()
+        candidate_keys.sort()
+        tmp = 0
+        while tmp != len(candidate_keys):
+            tmp = len(candidate_keys)
+            for key in candidate_keys:
+                for key_2 in candidate_keys:
+                    check = True
+                    if k not in key_2 and check:
+                        check = False
+                if len(key) > len(key_2):
+                    candidate_keys.remove(key_2)
+                elif len(key_2) > len(key):
+                    candidate_keys.remove(key)
+            candidate_keys.reverse()
+        return candidate_keys
 
     """
     Removes all the duplicates FunctionalDependency objects in __fdObjects and from the relation.
@@ -127,7 +174,8 @@ class FDManagement:
     def remove_useless(self):
         delete: list[FunctionalDependency] = []
         for fd in self.get_fd():
-            if fd.get_attributes_b in fd.get_attributes_a or (fd.get_attributes_a == "" or fd.get_attributes_b == ""):
+            if fd.get_attributes_b() in fd.get_attributes_a() or (
+                    fd.get_attributes_a() == "" or fd.get_attributes_b() == ""):
                 delete += fd
         for fd in delete:
             self.remove_fd(fd)
@@ -139,15 +187,17 @@ class FDManagement:
     def remove_transitive(self, relation):
         delete: list[FunctionalDependency] = []
         for fd in self.get_fd():
-            closure = self.closure(relation, fd.get_attributes_a)
-            if all(x in closure for x in fd.get_attributes_b):
+            closure = self.closure(relation, fd.get_attributes_a())
+            if all(x in closure for x in fd.get_attributes_b()):
                 delete.append(fd)
         for fd in delete:
             self.remove_fd(fd)
 
     def remove_all_transitive(self, relations):
-        for relation in relations:
-            self.remove_transitive(relation)
+        if len(relations) != 0:
+            for relation in relations:
+                if relation != "FuncDep":
+                    self.remove_transitive(relation)
 
     """
     Finds all the non functional dependencies in the FuncDep relation.
@@ -155,24 +205,27 @@ class FDManagement:
     """
 
     def all_non_fd(self):
-        nonfd = []
+        non_fd = []
         existent = {}
         for fd in self.get_fd():
-            self.get_db().csr().execute("SELECT" + ",".join(list(fd.get_attributes_a() + fd.get_attributes_b)) + " FROM " + fd.get_relation)
+            self.get_db().csr().execute(
+                "SELECT {} FROM {}".format(",".join(fd.get_attributes_a() + fd.get_attributes_b()), fd.get_relation()))
             for row in self.get_db().csr().fetchall():
-                concata = ""
-                concatb = ""
+                concat_a = ""
+                concat_b = ""
                 for i in range(len(fd.get_attributes_a())):
-                    concata += row[i]
-                for j in range(len(fd.get_attributes_a()),len(row)-1):
-                    concatb += row[j]
-                if concata in existent:
-                    if existent.get(concata) != concatb and fd not in nonfd:
-                        nonfd.append(FunctionalDependency(fd))
+                    #T[X]
+                    concat_a += row[i]
+                for j in range(len(fd.get_attributes_a()), len(row) - 1):
+                    #T[Y]
+                    concat_b += row[j]
+                if concat_a in existent:
+                    if existent.get(concat_a) != concat_b and fd not in non_fd:
+                        non_fd.append(fd)
                         break
                 else:
-                    existent[concata] = concatb
-        return nonfd
+                    existent[concat_a] = concat_b
+        return non_fd
 
     """
     Adds a functional dependency in __fdObjects and in the FuncDep relation.
@@ -183,8 +236,8 @@ class FDManagement:
         self.get_fd().append(fd)
         self.get_db().csr().execute(
             "INSERT INTO FuncDep VALUES('{}','{}','{}')".format(fd.get_relation(),
-                                                                fd.get_attributes_a(),
-                                                                fd.get_attributes_b()))
+                                                                ",".join(fd.get_attributes_a()),
+                                                                ",".join(fd.get_attributes_b())))
 
     """
     Replaces a functional dependency by another in __fdObjects and in the FuncDep relation.
@@ -200,11 +253,11 @@ class FDManagement:
         self.get_fd()[self.get_fd().index(fd1)] = fd2
         self.get_db().csr().execute("UPDATE FuncDep SET table_name='{}',lhs='{}',rhs='{}' WHERE table_name='{}' AND "
                                     "lhs='{}' AND rhs='{}'".format(fd2.get_relation,
-                                                                   fd2.get_attributes_a(),
-                                                                   fd2.get_attributes_b(),
+                                                                   " ".join(fd2.get_attributes_a()),
+                                                                   " ".join(fd2.get_attributes_b()),
                                                                    fd1.get_relation,
-                                                                   fd1.get_attributes_a(),
-                                                                   fd1.get_attributes_b()))
+                                                                   " ".join(fd1.get_attributes_a()),
+                                                                   " ".join(fd1.get_attributes_b())))
 
     def remove_fd(self, fd: FunctionalDependency):
         for fd1 in self.get_fd():
@@ -215,8 +268,10 @@ class FDManagement:
         self.get_fd().remove(fd)
         self.get_db().csr().execute(
             "DELETE FROM FuncDep WHERE table_name='{}' AND lhs='{}' AND  rhs='{}'".format(fd.get_relation,
-                                                                                          fd.get_attributes_a(),
-                                                                                          fd.get_attributes_b()))
+                                                                                          ",".join(
+                                                                                              fd.get_attributes_a()),
+                                                                                          ",".join(
+                                                                                              fd.get_attributes_b())))
 
     def __str__(self):
         tmp = "Here is the list of the functional dependencies:\n\n"
