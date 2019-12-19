@@ -23,7 +23,7 @@ class FunctionalDependency:
         return self.__attributesB
 
     def __str__(self):
-        return self.get_relation()+" "+",".join(self.get_attributes_a()) + " --> " + ",".join(self.get_attributes_b()) + "\n"
+        return "Relation: " + self.get_relation() + " FD: " + ",".join(self.get_attributes_a()) + " --> " + "".join(self.get_attributes_b()) + "\n"
 
 
 """
@@ -236,8 +236,8 @@ class FDManagement:
         self.get_fd().append(fd)
         self.get_db().csr().execute(
             "INSERT INTO FuncDep VALUES('{}','{}','{}')".format(fd.get_relation(),
-                                                                ",".join(fd.get_attributes_a()),
-                                                                ",".join(fd.get_attributes_b())))
+                                                                " ".join(fd.get_attributes_a()),
+                                                                " ".join(fd.get_attributes_b())))
 
     """
     Replaces a functional dependency by another in __fdObjects and in the FuncDep relation.
@@ -252,7 +252,7 @@ class FDManagement:
 
         self.get_fd()[self.get_fd().index(fd1)] = fd2
         self.get_db().csr().execute("UPDATE FuncDep SET table_name='{}',lhs='{}',rhs='{}' WHERE table_name='{}' AND "
-                                    "lhs='{}' AND rhs='{}'".format(fd2.get_relation,
+                                    "lhs='{}' AND rhs='{}'".format(fd2.get_relation(),
                                                                    " ".join(fd2.get_attributes_a()),
                                                                    " ".join(fd2.get_attributes_b()),
                                                                    fd1.get_relation,
@@ -267,10 +267,10 @@ class FDManagement:
 
         self.get_fd().remove(fd)
         self.get_db().csr().execute(
-            "DELETE FROM FuncDep WHERE table_name='{}' AND lhs='{}' AND  rhs='{}'".format(fd.get_relation,
-                                                                                          ",".join(
+            "DELETE FROM FuncDep WHERE table_name='{}' AND lhs='{}' AND  rhs='{}'".format(fd.get_relation(),
+                                                                                          " ".join(
                                                                                               fd.get_attributes_a()),
-                                                                                          ",".join(
+                                                                                          " ".join(
                                                                                               fd.get_attributes_b())))
 
     def __str__(self):

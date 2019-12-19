@@ -48,7 +48,7 @@ Executes the user action.
 """
 
 
-def switch_choices(choice, fd):
+def switch_choices(choice, fd, csr):
     switch = {
         1: display_fd,
         2: display_keys,
@@ -62,6 +62,8 @@ def switch_choices(choice, fd):
         10: export_3NF,
         11: leave
     }
+    if choice == 3:
+        return switch.get(choice)(fd, csr)
     if choice != 11:
         return switch.get(choice)(fd)
     return switch.get(choice)()
@@ -110,13 +112,44 @@ def display_keys(fd: FDManagement):
 
 
 """
+Finds all the non functional dependencies in the FuncDep relation.
+:return: Array of FunctionalDependency objects that are not functional dependencies.
+"""
+
+
+def all_non_fd(fd: FDManagement, csr):
+    non_fd = []
+    existent = {}
+    for f_d in fd.get_fd():
+        csr.execute(
+            "SELECT {} FROM {}".format(",".join(f_d.get_attributes_a() + f_d.get_attributes_b()), f_d.get_relation()))
+        for row in csr.fetchall():
+            concat_a = ""
+            concat_b = ""
+            for X in range(len(f_d.get_attributes_a())):
+                # T[X]
+                concat_a += str(row[X])
+            tmp = len(f_d.get_attributes_a())
+            tmp2 = len(row)
+            for Y in range(tmp, tmp2):
+                # T[Y]
+                concat_b += str(row[Y])
+            if concat_a in existent:
+                if existent.get(concat_a) != concat_b and f_d not in non_fd:
+                    non_fd.append(f_d)
+            else:
+                existent[concat_a] = concat_b
+    return non_fd
+
+
+"""
 Displays all the non-functional dependencies of the FuncDep relation and lets the user to delete them.
 :param fd: FDManagement object that contains all the functional dependencies.
 """
 
 
-def remove_non_fd(fd: FDManagement):
-    non_fd = fd.all_non_fd()
+def remove_non_fd(fd: FDManagement, csr):
+    non_fd = all_non_fd(fd, csr)
     if len(non_fd) == 0:
         print("No non functional dependencies")
     else:
@@ -226,7 +259,7 @@ def leave():
     raise SystemExit
 
 
-def choices(fd):
+def choices(fd, csr):
     while working:
         print("Choose an action\n-------------------------------\n")
         print("1. Display the FuncDep relation")
@@ -246,7 +279,7 @@ def choices(fd):
             choice = int(input("Enter an action: "))
             if not 0 < choice < 12:
                 print("Unknown action")
-        switch_choices(choice, fd)
+        switch_choices(choice, fd, csr)
 
 
 if __name__ == '__main__':
@@ -254,5 +287,5 @@ if __name__ == '__main__':
     sql_db = SQLiteDB(database)
     cursor = sql_db.csr()
     FDmg = FDManagement(fd_from_db(cursor), sql_db)
-    choices(FDmg)
+    choices(FDmg, cursor)
     sql_db.close()
