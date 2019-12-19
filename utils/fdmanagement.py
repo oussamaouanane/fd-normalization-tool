@@ -23,7 +23,8 @@ class FunctionalDependency:
         return self.__attributesB
 
     def __str__(self):
-        return "Relation: " + self.get_relation() + " FD: " + ",".join(self.get_attributes_a()) + " --> " + "".join(self.get_attributes_b()) + "\n"
+        return "Relation: " + self.get_relation() + " FD: " + ",".join(self.get_attributes_a()) + " --> " + "".join(
+            self.get_attributes_b()) + "\n"
 
 
 """
@@ -88,18 +89,18 @@ class FDManagement:
     def closure(self, relation, attributes):
         fd_in_relation = []
         for fd in self.get_fd():
-            if fd.get_relation == relation:
+            if fd.get_relation() == relation:
                 fd_in_relation.append(fd)
 
         # Will help to find the state where attr stays still
         attr_compare = []
-        attr = list(attributes)
+        attr = attributes
 
         while attr_compare != attr:
             attr_compare = attr
             for fd in fd_in_relation:
-                if all(x in attr for x in fd.get_attributes_a):
-                    attr = list(set(attr).union(set(fd.get_attributes_b)))
+                if all(x in attr for x in fd.get_attributes_a()):
+                    attr = list(set(attr).union(set(fd.get_attributes_b())))
         return attr
 
     """
@@ -110,19 +111,22 @@ class FDManagement:
     def get_super_keys(self, relation):
         super_keys = []
         super_keys_return = []
+
         all_possible_combinations = []
         attributes = self.get_db().get_attributes(relation)
         attributes.sort()
         for index in range(0, len(attributes) + 1):
-            all_possible_combinations.append(list(combinations(attributes, index + 1)))
+            for comb in list(combinations(attributes, index + 1)):
+                all_possible_combinations.append(list(comb))
+
         for attribute in all_possible_combinations:
-            for i in attribute:
-                closure = self.closure(relation, i)
-                closure.sort()
-                if closure == attributes:
-                    super_keys.append(attribute)
+            closure = self.closure(relation, attribute)
+            closure.sort()
+            if closure == attributes:
+                super_keys.append(attribute)
+
         for attr in super_keys:
-            super_keys_return.append(list(attr[0]))
+            super_keys_return.append(attr)
         return super_keys_return
 
     """
@@ -141,12 +145,14 @@ class FDManagement:
             for key in candidate_keys:
                 for key_2 in candidate_keys:
                     check = True
-                    if k not in key_2 and check:
-                        check = False
-                if len(key) > len(key_2):
-                    candidate_keys.remove(key_2)
-                elif len(key_2) > len(key):
-                    candidate_keys.remove(key)
+                    for attribute in key:
+                        if (attribute not in key_2) and check:
+                            check = False
+                    if check:
+                        if len(list(key)) > len(list(key_2)):
+                            candidate_keys.remove(key)
+                        elif len(list(key_2)) > len(list(key)):
+                            candidate_keys.remove(key_2)
             candidate_keys.reverse()
         return candidate_keys
 
@@ -198,34 +204,6 @@ class FDManagement:
             for relation in relations:
                 if relation != "FuncDep":
                     self.remove_transitive(relation)
-
-    """
-    Finds all the non functional dependencies in the FuncDep relation.
-    :return: Array of FunctionalDependency objects that are not functional dependencies.
-    """
-
-    def all_non_fd(self):
-        non_fd = []
-        existent = {}
-        for fd in self.get_fd():
-            self.get_db().csr().execute(
-                "SELECT {} FROM {}".format(",".join(fd.get_attributes_a() + fd.get_attributes_b()), fd.get_relation()))
-            for row in self.get_db().csr().fetchall():
-                concat_a = ""
-                concat_b = ""
-                for i in range(len(fd.get_attributes_a())):
-                    #T[X]
-                    concat_a += row[i]
-                for j in range(len(fd.get_attributes_a()), len(row) - 1):
-                    #T[Y]
-                    concat_b += row[j]
-                if concat_a in existent:
-                    if existent.get(concat_a) != concat_b and fd not in non_fd:
-                        non_fd.append(fd)
-                        break
-                else:
-                    existent[concat_a] = concat_b
-        return non_fd
 
     """
     Adds a functional dependency in __fdObjects and in the FuncDep relation.

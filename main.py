@@ -10,6 +10,14 @@ Let the user to execute the different functions of the project from a list of op
 
 database = None
 working = True
+check = (False, False)
+
+
+def check():
+    if check == (True, True):
+        return True
+    return False
+
 
 """
 Gets the user's database name after the parameter '-f' w/ argparse.
@@ -51,8 +59,8 @@ Executes the user action.
 def switch_choices(choice, fd, csr):
     switch = {
         1: display_fd,
-        2: display_keys,
-        3: remove_non_fd,
+        2: remove_non_fd,
+        3: display_keys,
         4: add_fd,
         5: modify_fd,
         6: remove_fd,
@@ -103,13 +111,14 @@ Displays all the keys (super and candidates) of a relation.
 
 
 def display_keys(fd: FDManagement):
-    relation = input("Enter the name of the relation: ")
-    print("The super keys of the relation {} are: ".format(relation), end="")
-    super_keys = fd.get_super_keys(relation)
-    print(super_keys)
-    print("The candidates keys of the relation {} are: ".format(relation), end="")
-    print(fd.get_candidate_keys(relation, super_keys))
-
+    if check():
+        relation = input("Enter the name of the relation: ")
+        super_keys = fd.get_super_keys(relation)
+        print("Number of super keys:", len(super_keys))
+        print(super_keys)
+        print("Number of candidate keys:", len(fd.get_candidate_keys(relation, super_keys)))
+        print(fd.get_candidate_keys(relation, super_keys))
+    print("Make sure you remove trivial fd and non-fd first!")
 
 """
 Finds all the non functional dependencies in the FuncDep relation.
@@ -159,6 +168,7 @@ def remove_non_fd(fd: FDManagement, csr):
         if remove.lower() == "yes" or remove.lower() == "y":
             for f_d in non_fd:
                 fd.remove_fd(f_d)
+            check[0] = True
 
 
 """
@@ -213,6 +223,7 @@ def remove_equivalence_transitive_fd(fd: FDManagement):
     fd.remove_useless()
     fd.remove_all_transitive(fd.get_db().get_relations())
     display_fd(fd)
+    check[1] = True
 
 
 """
@@ -227,26 +238,31 @@ def commit_changes(fd: FDManagement):
 
 
 def check_BCNF(fd: FDManagement):
-    norm = Normalization(fd)
-    print()
-    check_3NF(fd, norm)
+    if check():
+        norm = Normalization(fd)
+        relation = input("Enter the name of the relation: ")
+        check_3NF(norm, relation)
+    print("Make sure you remove trivial fd and non-fd first!")
 
 
-def check_3NF(fd: FDManagement, normalization: Normalization, relation) -> bool:
+def check_3NF(normalization: Normalization, relation) -> bool:
     return normalization.is_3NF(relation)
 
 
 def export_3NF(fd: FDManagement):
-    norm = Normalization(fd)
-    normalized = True
-    for relation in fd.get_db().get_relations():
-        if not check_3NF(fd, norm, relation):
-            normalized = False
-    if normalized:
-        print("Already in 3NF")
+    if check():
+        norm = Normalization(fd)
+        normalized = True
+        for relation in fd.get_db().get_relations():
+            if not check_3NF(fd, norm, relation):
+                normalized = False
+        if normalized:
+            print("Already in 3NF")
+        else:
+            # TODO: Call the 3NF decomposition function
+            pass
     else:
-        # TODO: Call the 3NF decomposition function
-        pass
+        print("Make sure you remove trivial fd and non-fd first!")
 
 
 """
@@ -255,7 +271,6 @@ Exit the application
 
 
 def leave():
-    working = False
     raise SystemExit
 
 
@@ -263,8 +278,8 @@ def choices(fd, csr):
     while working:
         print("Choose an action\n-------------------------------\n")
         print("1. Display the FuncDep relation")
-        print("2. Display the keys")
-        print("3. Check if all the fields of FuncDep are functional dependencies")
+        print("2. Check if all the fields of FuncDep are functional dependencies")
+        print("3. Display the keys")
         print("4. Add a functional dependency")
         print("5. Modify a functional dependency")
         print("6. Remove a functional dependency")
