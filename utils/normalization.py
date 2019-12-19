@@ -1,5 +1,5 @@
 from SQLiteDB import SQLiteDB
-from utils.FDManagement import *
+from utils.fdmanagement import *
 
 
 class Normalization:

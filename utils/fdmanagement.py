@@ -23,7 +23,7 @@ class FunctionalDependency:
         return self.__attributesB
 
     def __str__(self):
-        return ",".join(self.get_attributes_a()) + " --> " + ",".join(self.get_attributes_b()) + "\n"
+        return self.get_relation()+" "+",".join(self.get_attributes_a()) + " --> " + ",".join(self.get_attributes_b()) + "\n"
 
 
 """

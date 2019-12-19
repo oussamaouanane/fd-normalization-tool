@@ -1,8 +1,8 @@
 import argparse
 import os.path
 from SQLiteDB import SQLiteDB
-from utils.FDManagement import *
-from utils.Normalization import Normalization
+from utils.fdmanagement import *
+from utils.normalization import *
 
 """
 Let the user to execute the different functions of the project from a list of options.
