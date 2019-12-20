@@ -10,11 +10,11 @@ Let the user to execute the different functions of the project from a list of op
 
 database = None
 working = True
-check = (False, False)
+check = [False, False]
 
 
-def check():
-    if check == (True, True):
+def check_done():
+    if check == [True, True]:
         return True
     return False
 
@@ -70,7 +70,7 @@ def switch_choices(choice, fd, csr):
         10: export_3NF,
         11: leave
     }
-    if choice == 3:
+    if choice == 2:
         return switch.get(choice)(fd, csr)
     if choice != 11:
         return switch.get(choice)(fd)
@@ -111,7 +111,7 @@ Displays all the keys (super and candidates) of a relation.
 
 
 def display_keys(fd: FDManagement):
-    if check():
+    if check_done():
         relation = input("Enter the name of the relation: ")
         super_keys = fd.get_super_keys(relation)
         print("Number of super keys:", len(super_keys))
@@ -238,7 +238,7 @@ def commit_changes(fd: FDManagement):
 
 
 def check_BCNF(fd: FDManagement):
-    if check():
+    if check_done():
         norm = Normalization(fd)
         relation = input("Enter the name of the relation: ")
         check_3NF(norm, relation)
@@ -250,7 +250,7 @@ def check_3NF(normalization: Normalization, relation) -> bool:
 
 
 def export_3NF(fd: FDManagement):
-    if check():
+    if check_done():
         norm = Normalization(fd)
         normalized = True
         for relation in fd.get_db().get_relations():
