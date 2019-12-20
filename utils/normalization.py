@@ -90,3 +90,4 @@ class Normalization:
                     if set(tmp).issubset(set(table)):
                         cursor.execute("INSERT INTO FuncDep VALUES('{}','{}','{}')".format(table," ".join(fdd.get_attributes_a()), " ".join(fdd.get_attributes_b())))
                         fd.remove(fdd)
+            new_db.commit()
