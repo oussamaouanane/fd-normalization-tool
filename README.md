@@ -1,10 +1,10 @@
-#Functional dependencies and normalization management tool
+# Functional dependencies and normalization management tool
 
 Multitasking tool that allows you to manipulate databases (.db format). You must include within your database a 'FuncDep' relation where the attributes are table_name,lhs,rhs, each row represents a singular functional dependency (separate your elements in lhs with a space).
 
 This project was made for the Databases I course at the University of Mons.
 
-##Usage
+## Usage
 
 ```bash
 python main.py -f nameofyourfile(.db)
@@ -12,6 +12,6 @@ python main.py -f nameofyourfile(.db)
 
 The tool will automatically read your database and lets you manipulate it. Deleting the unnecessary functionnal and the non-functionnal dependencies are needed to display the keys or check the 3NF/BCNF normalization/export in 3NF normalized form.
 
-##Authors
+## Authors
 
 Written by Oussama Ouanane and Guillaume Kerckhofs
