@@ -1,7 +1,5 @@
 import argparse
 import os.path
-from SQLiteDB import SQLiteDB
-from utils.fdmanagement import *
 from utils.normalization import *
 
 """
@@ -66,8 +64,8 @@ def switch_choices(choice, fd, csr):
         6: remove_fd,
         7: remove_equivalence_transitive_fd,
         8: commit_changes,
-        9: check_BCNF,
-        10: export_3NF,
+        9: check_bcnf,
+        10: export_3nf,
         11: leave
     }
     if choice == 2:
@@ -118,7 +116,9 @@ def display_keys(fd: FDManagement):
         print(super_keys)
         print("Number of candidate keys:", len(fd.get_candidate_keys(relation, super_keys)))
         print(fd.get_candidate_keys(relation, super_keys))
-    print("Make sure you remove trivial fd and non-fd first!")
+    else:
+        print("Make sure you remove trivial fd and non-fd first!")
+
 
 """
 Finds all the non functional dependencies in the FuncDep relation.
@@ -237,30 +237,43 @@ def commit_changes(fd: FDManagement):
     sqli.save()
 
 
-def check_BCNF(fd: FDManagement):
+def check_bcnf(fd: FDManagement):
     if check_done():
         norm = Normalization(fd)
         relation = input("Enter the name of the relation: ")
-        check_3NF(norm, relation)
-    print("Make sure you remove trivial fd and non-fd first!")
+        bcnf = ""
+        if norm.is_bcnf(relation):
+            bcnf = "OK"
+        else:
+            bcnf = "NO"
+        print("BCNF: " + bcnf)
+        threenf = ""
+        if check_3nf(norm, relation):
+            threenf = "OK"
+        else:
+            threenf = "NO"
+        print("3NF: " + threenf)
+    else:
+        print("Make sure you remove trivial fd and non-fd first!")
 
 
-def check_3NF(normalization: Normalization, relation) -> bool:
-    return normalization.is_3NF(relation)
+def check_3nf(normalization: Normalization, relation) -> bool:
+    return normalization.is_3nf(relation)
 
 
-def export_3NF(fd: FDManagement):
+def export_3nf(fd: FDManagement):
     if check_done():
         norm = Normalization(fd)
         normalized = True
-        for relation in fd.get_db().get_relations():
-            if not check_3NF(fd, norm, relation):
-                normalized = False
+        #for relation in fd.get_db().get_relations():
+        relation = input()
+        if not check_3nf(norm, relation):
+            normalized = False
         if normalized:
             print("Already in 3NF")
         else:
-            # TODO: Call the 3NF decomposition function
-            pass
+            norm.decompostion_3nf(relation)
+            print("Done!")
     else:
         print("Make sure you remove trivial fd and non-fd first!")
 
