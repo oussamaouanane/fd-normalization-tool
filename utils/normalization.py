@@ -1,5 +1,6 @@
 from SQLiteDB import SQLiteDB
 from utils.fdmanagement import *
+import sqlite3
 
 
 class Normalization:
@@ -54,21 +55,38 @@ class Normalization:
     """
 
     def decompostion_3NF(self,relation,database_name="decomposition.db"):
-        if(relation!="FuncDep"):
-            cursor = self.connection.cursor()
+        if relation!="FuncDep":
             keys_list=self.__fdmanagement.get_candidate_keys(relation)
-            """keys_list[0] est le premier tableau de la base de données """
             fd=self.__fdmanagement.get_fd()
-            attributes=[]
+            attributes={}
             for fdbis in fd:
                 att=fdbis.get_attributes_a()
                 if att not in attributes:
-                    attributes.append(att)
-            compo_table=[]
-            for att in attributes:
-                compo_table=direct_closure(relation,att)
-            """fd.get_db().csr().execute("INSERT INTO {} SELECT {} FROM {}".format(nouvelle_relation, attributes+fd.direct_closure(relation, attributes), relation))
-            crée et met les valeurs de l'ancienne table dans la nouvelle
-            """
+                    attributes[att]=direct_closure(relation,att)
+            new_attributes=attributes.deepcopy()
+            tmpSize=0
+            lhs=[]
+            for att in fd:
+                tmp=att.get_attributes_a()
+                lhs.append(tmp)
+            while len(lhs) !=tmpSize:
+                tmpSize=len(lhs)
+                for a in lhs:
+                    for b in lhs:
+                        if set(b).issubset(set(a)):
+                            new_attributes[a]=new_attributes[a]+" "+new_attributes[b]
+                            del new_attributes[b]
+                            lhs.remove(b)
+                            break
+                    break
+            new_db=sqlite3.connect(database_name)
+            cursor=connexion.cursor()
 
-
+            cursor.executescript("""INSERT INTO {} VALUES {}""".format("main",self.__db.execute("SELECT {} FROM {}").format(",".join(keys_list[0]), relation)))
+            for table in new_attributes.values():
+                cursor.executescript("""INSERT INTO {} VALUES {}""".format(table,self.__db.execute("SELECT {} FROM {}").format(table+new_attributes[table],relation)))
+                for fdd in fd:
+                    tmp=fdd.get_attributes_a()
+                    if set(tmp).issubset(set(table)):
+                        cursor.execute("INSERT INTO FuncDep VALUES('{}','{}','{}')".format(table," ".join(fdd.get_attributes_a()), " ".join(fdd.get_attributes_b())))
+                        fd.remove(fdd)
