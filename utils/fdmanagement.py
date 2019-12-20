@@ -1,3 +1,5 @@
+import copy
+
 from SQLiteDB import SQLiteDB
 from itertools import combinations
 
@@ -87,21 +89,21 @@ class FDManagement:
     """
 
     def closure(self, relation, attributes):
-        fd_in_relation = []
+        old_dep = set()
+        # {A_1,A_2,...}
+        new_dep = set(attributes)
+        f = set()
+
         for fd in self.get_fd():
-            if fd.get_relation() == relation:
-                fd_in_relation.append(fd)
+            if relation == fd.get_relation():
+                f.add(fd)
 
-        # Will help to find the state where attr stays still
-        attr_compare = []
-        attr = attributes
-
-        while attr_compare != attr:
-            attr_compare = attr
-            for fd in fd_in_relation:
-                if all(x in attr for x in fd.get_attributes_a()):
-                    attr = list(set(attr).union(set(fd.get_attributes_b())))
-        return attr
+        while new_dep != old_dep:
+            old_dep = new_dep
+            for f_d in f:
+                if new_dep.issuperset(set(f_d.get_attributes_a())):
+                    new_dep = new_dep.union(set(f_d.get_attributes_b()))
+        return list(new_dep)
 
     """
     Finds all the super keys.
@@ -111,10 +113,11 @@ class FDManagement:
     def get_super_keys(self, relation):
         super_keys = []
         super_keys_return = []
-
         all_possible_combinations = []
+
         attributes = self.get_db().get_attributes(relation)
         attributes.sort()
+
         for index in range(0, len(attributes) + 1):
             for comb in list(combinations(attributes, index + 1)):
                 all_possible_combinations.append(list(comb))
@@ -191,19 +194,12 @@ class FDManagement:
     """
 
     def remove_transitive(self, relation):
-        delete: list[FunctionalDependency] = []
-        for fd in self.get_fd():
-            closure = self.closure(relation, fd.get_attributes_a())
-            if all(x in closure for x in fd.get_attributes_b()):
-                delete.append(fd)
-        for fd in delete:
-            self.remove_fd(fd)
+        pass
+        # TODO
 
     def remove_all_transitive(self, relations):
-        if len(relations) != 0:
-            for relation in relations:
-                if relation != "FuncDep":
-                    self.remove_transitive(relation)
+        pass
+        # TODO
 
     """
     Adds a functional dependency in __fdObjects and in the FuncDep relation.
