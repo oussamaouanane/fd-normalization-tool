@@ -80,7 +80,7 @@ class Normalization:
                             break
                     break
             new_db=sqlite3.connect(database_name)
-            cursor=connexion.cursor()
+            cursor=new_db.cursor()
 
             cursor.executescript("""INSERT INTO {} VALUES {}""".format("main",self.__db.execute("SELECT {} FROM {}").format(",".join(keys_list[0]), relation)))
             for table in new_attributes.values():
