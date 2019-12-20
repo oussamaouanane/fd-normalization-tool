@@ -128,8 +128,8 @@ Finds all the non functional dependencies in the FuncDep relation.
 
 def all_non_fd(fd: FDManagement, csr):
     non_fd = []
-    existent = {}
     for f_d in fd.get_fd():
+        existent={}
         csr.execute(
             "SELECT {} FROM {}".format(",".join(f_d.get_attributes_a() + f_d.get_attributes_b()), f_d.get_relation()))
         for row in csr.fetchall():
@@ -161,6 +161,7 @@ def remove_non_fd(fd: FDManagement, csr):
     non_fd = all_non_fd(fd, csr)
     if len(non_fd) == 0:
         print("No non functional dependencies")
+        check[0] = True
     else:
         for f_d in non_fd:
             print(f_d)

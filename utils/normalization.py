@@ -40,7 +40,6 @@ class Normalization:
     def is_bcnf(self, relation):
         res = True
         fd = self.__fd_mng.get_fd()
-        super_keys = self.__fd_mng.get_super_keys(relation)
         if len(fd) != 0:
             for fdbis in fd:
                 if fdbis.get_relation() == relation:
@@ -61,14 +60,17 @@ class Normalization:
             fd = self.__fd_mng.get_fd()
             attributes = {}
             for fdbis in fd:
-                att = fdbis.get_attributes_a()
-                if att not in attributes:
-                    attributes[att] = self.__fd_mng.direct_closure(relation, att)
+                if fdbis.get_relation()==relation:
+                    att = ",".join(fdbis.get_attributes_a())
+                    if att not in attributes:
+                        attributes[att] = self.__fd_mng.direct_closure(relation, att)
+                else:
+                    fd.remove(fdbis)
             new_attributes = copy.deepcopy(attributes)
             tmp_size = 0
             lhs = []
             for att in fd:
-                tmp = att.get_attributes_a()
+                tmp = ",".join(att.get_attributes_a())
                 lhs.append(tmp)
             while len(lhs) != tmp_size:
                 tmp_size = len(lhs)
@@ -83,17 +85,17 @@ class Normalization:
             new_db = sqlite3.connect(database_name)
             cursor = new_db.cursor()
 
-            cursor.execute("""INSERT INTO {} VALUES {}""".format("main",
-                                                                       self.__db.execute("SELECT {} FROM {}").format(
+            cursor.execute("""INSERT INTO {}""".format("main(" + ",".join(keys_list[0]) + ")",
+                                                                       self.__db.csr().execute()("SELECT {} FROM {}").format(
                                                                            ",".join(keys_list[0]), relation)))
             for table in new_attributes.values():
-                cursor.executes("""INSERT INTO {} VALUES {}""".format(table, self.__db.execute(
+                cursor.executes("""INSERT INTO {} VALUES {}""".format(table, self.__db.csr().execute()(
                     "SELECT {} FROM {}").format(table + new_attributes[table], relation)))
                 for fdd in fd:
                     tmp = fdd.get_attributes_a()
                     if set(tmp).issubset(set(table)):
                         cursor.execute(
-                            "INSERT INTO FuncDep VALUES('{}','{}','{}')".format(table, " ".join(fdd.get_attributes_a()),
-                                                                                " ".join(fdd.get_attributes_b())))
+                            "INSERT INTO FuncDep VALUES('{}','{}','{}')".format(table, ",".join(fdd.get_attributes_a()),
+                                                                                ",".join(fdd.get_attributes_b())))
                         fd.remove(fdd)
             new_db.commit()
