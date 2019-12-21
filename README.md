@@ -12,6 +12,14 @@ python main.py -f nameofyourfile(.db)
 
 The tool will automatically read your database and lets you manipulate it. Deleting the unnecessary functionnal and the non-functionnal dependencies are needed to display the keys or check the 3NF/BCNF normalization/export in 3NF normalized form.
 
+## Source
+
+- D. Maier: The Theory of Relational Databases
+
+## Problems
+
+The decomposition doesn't work, the algorithm is probably correct but we had issues in the export part with SQLite.
+
 ## Authors
 
 Written by Oussama Ouanane and Guillaume Kerckhofs
