@@ -194,12 +194,23 @@ class FDManagement:
     """
 
     def remove_transitive(self, relation):
-        pass
-        # TODO
+        transitive = []
+        for fd in self.get_fd():
+            for fd2 in self.get_fd():
+                if fd2.get_attributes_a() == fd.get_attributes_b() and fd2.get_relation() == fd.get_relation() == relation:
+                    transitive.append(FunctionalDependency(
+                        (relation, " ".join(fd.get_attributes_a()), " ".join(fd2.get_attributes_b()))))
+
+        # Remove duplicate
+        transitive = set(transitive)
+        for fd in self.get_fd():
+            for f_d in transitive:
+                if compare_fd(f_d, fd):
+                    self.remove_fd(fd)
 
     def remove_all_transitive(self, relations):
-        pass
-        # TODO
+        for relation in relations:
+            self.remove_transitive(relation)
 
     """
     Adds a functional dependency in __fdObjects and in the FuncDep relation.
