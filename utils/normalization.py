@@ -94,7 +94,7 @@ class Normalization:
 
 
             for table in new_attributes.values():
-                cursor.executes("""INSERT INTO {} VALUES {}""".format(table, self.__db.csr().execute(
+                cursor.execute("""INSERT INTO {} VALUES {}""".format(table, self.__db.csr().execute(
                     "SELECT {} FROM {}".format(table + new_attributes[table], relation))))
                 for fdd in fd:
                     tmp = fdd.get_attributes_a()
