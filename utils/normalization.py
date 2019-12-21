@@ -82,15 +82,20 @@ class Normalization:
                             lhs.remove(b)
                             break
                     break
+
+                    
             new_db = sqlite3.connect(database_name)
             cursor = new_db.cursor()
+            selection=self.__db.csr().execute("""SELECT {} FROM {}""".format( ",".join(keys_list[0]),relation))
 
-            cursor.execute("""INSERT INTO {}""".format("main(" + ",".join(keys_list[0]) + ")",
-                                                                       self.__db.csr().execute()("SELECT {} FROM {}").format(
-                                                                           ",".join(keys_list[0]), relation)))
+
+            for row in selection:
+                cursor.execute("""INSERT INTO main({}) VALUES ({})""".format(",".join(keys_list[0]),row))
+
+
             for table in new_attributes.values():
-                cursor.executes("""INSERT INTO {} VALUES {}""".format(table, self.__db.csr().execute()(
-                    "SELECT {} FROM {}").format(table + new_attributes[table], relation)))
+                cursor.executes("""INSERT INTO {} VALUES {}""".format(table, self.__db.csr().execute(
+                    "SELECT {} FROM {}".format(table + new_attributes[table], relation))))
                 for fdd in fd:
                     tmp = fdd.get_attributes_a()
                     if set(tmp).issubset(set(table)):
