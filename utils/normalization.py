@@ -27,8 +27,11 @@ class Normalization:
 
             for fdbis in fd:
                 if fdbis.get_relation() == relation:
-                    if not ((self.__fd_mng.closure(relation, fdbis.get_attributes_a()) == self.__fd_mng.get_db().get_attributes(
-                            relation)) or fdbis.get_attributes_b() in keys):
+                    closure =self.__fd_mng.closure(relation, fdbis.get_attributes_a())
+                    closure.sort()
+                    rhs=(",".join(fdbis.get_attributes_b()))
+                    if not ((closure == self.__fd_mng.get_db().get_attributes(relation))
+                            or rhs in keys):
                         res = False
         return res
 
@@ -43,7 +46,9 @@ class Normalization:
         if len(fd) != 0:
             for fdbis in fd:
                 if fdbis.get_relation() == relation:
-                    if not (self.__fd_mng.closure(relation, fdbis.get_attributes_a()) == self.__fd_mng.get_db().get_attributes(
+                    closure = self.__fd_mng.closure(relation, fdbis.get_attributes_a())
+                    closure.sort()
+                    if not (closure== self.__fd_mng.get_db().get_attributes(
                             relation)):
                         res = False
         return res
@@ -54,24 +59,27 @@ class Normalization:
     :param database_name: str that represents the name of the new database, decomposition by default
     """
 
-    def decompostion_3nf(self, relation, database_name="decomposition.db"):
+    def decompostion_3nf(self, relation):
         if relation != "FuncDep":
-            keys_list = self.__fd_mng.get_candidate_keys(relation, self.__fd_mng.get_super_keys(relation))
             fd = self.__fd_mng.get_fd()
-            attributes = {}
-            for fdbis in fd:
-                if fdbis.get_relation()==relation:
-                    att = ",".join(fdbis.get_attributes_a())
-                    if att not in attributes:
-                        attributes[att] = self.__fd_mng.direct_closure(relation, att)
-                else:
-                    fd.remove(fdbis)
+            keys_list = self.__fd_mng.get_candidate_keys(relation, self.__fd_mng.get_super_keys(relation))
+            if len(fd)!=0:
+                attributes = {}
+                for fdbis in fd:
+                    if fdbis.get_relation()==relation:
+                        att = ",".join(fdbis.get_attributes_a())
+                        if att not in attributes:
+                            attributes[att] = self.__fd_mng.direct_closure(relation, att)
+
+                    else:
+                        fd.remove(fdbis)
             new_attributes = copy.deepcopy(attributes)
             tmp_size = 0
             lhs = []
             for att in fd:
-                tmp = ",".join(att.get_attributes_a())
-                lhs.append(tmp)
+                if fdbis.get_relation() == relation:
+                    tmp = ",".join(att.get_attributes_a())
+                    lhs.append(tmp)
             while len(lhs) != tmp_size:
                 tmp_size = len(lhs)
                 for a in lhs:
@@ -83,24 +91,16 @@ class Normalization:
                             break
                     break
 
-                    
-            new_db = sqlite3.connect(database_name)
-            cursor = new_db.cursor()
-            selection=self.__db.csr().execute("""SELECT {} FROM {}""".format( ",".join(keys_list[0]),relation))
 
 
-            for row in selection:
-                cursor.execute("""INSERT INTO main({}) VALUES ({})""".format(",".join(keys_list[0]),row))
-
+            print("""La table main est composé de {}""".format( ",".join(keys_list[0])))
 
             for table in new_attributes.values():
-                cursor.executes("""INSERT INTO {} VALUES {}""".format(table, self.__db.csr().execute(
-                    "SELECT {} FROM {}".format(table + new_attributes[table], relation))))
+                print("""La table: {} est composé de {}""".format(table,table + new_attributes[table]))
                 for fdd in fd:
                     tmp = fdd.get_attributes_a()
                     if set(tmp).issubset(set(table)):
                         cursor.execute(
-                            "INSERT INTO FuncDep VALUES('{}','{}','{}')".format(table, ",".join(fdd.get_attributes_a()),
+                            "La fd de la table :{} est {} --> {})".format(table, ",".join(fdd.get_attributes_a()),
                                                                                 ",".join(fdd.get_attributes_b())))
                         fd.remove(fdd)
-            new_db.commit()
