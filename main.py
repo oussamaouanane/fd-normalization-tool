@@ -3,7 +3,7 @@ import os.path
 from utils.normalization import *
 
 """
-Let the user to execute the different functions of the project from a list of options.
+Lets the user execute the different functions of the project from a list of options.
 """
 
 database = None
@@ -129,7 +129,7 @@ Finds all the non functional dependencies in the FuncDep relation.
 def all_non_fd(fd: FDManagement, csr):
     non_fd = []
     for f_d in fd.get_fd():
-        existent={}
+        existent = {}
         csr.execute(
             "SELECT {} FROM {}".format(",".join(f_d.get_attributes_a() + f_d.get_attributes_b()), f_d.get_relation()))
         for row in csr.fetchall():
@@ -266,7 +266,7 @@ def export_3nf(fd: FDManagement):
     if check_done():
         norm = Normalization(fd)
         normalized = True
-        #for relation in fd.get_db().get_relations():
+        # for relation in fd.get_db().get_relations():
         relation = input()
         if not check_3nf(norm, relation):
             normalized = False
