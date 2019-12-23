@@ -10,7 +10,7 @@ This project was made for the Databases I course at the University of Mons.
 python main.py -f nameofyourfile(.db)
 ```
 
-The tool will automatically read your database and lets you manipulate it. Deleting the unnecessary functionnal and the non-functionnal dependencies are needed to display the keys or check the 3NF/BCNF normalization/export in 3NF normalized form.
+The tool will automatically read your database and lets you manipulate it. Deleting the unnecessary functionnal and the non-functionnal dependencies is needed to display the keys or check the 3NF/BCNF normalization/export in 3NF normalized form.
 
 ## Source
 
