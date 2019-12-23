@@ -18,7 +18,7 @@ The tool will automatically read your database and lets you manipulate it. Delet
 
 ## Problems
 
-The decomposition doesn't work, the algorithm is probably correct but we had issues in the export part with SQLite.
+The decomposition doesn't work as wanted, the algorithm is correct but we had issues in the export part with SQLite.
 
 ## Authors
 
